@@ -1,6 +1,5 @@
-// ClockInConfirmation.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 
 const ClockInConfirmation = ({ route, navigation }) => {
   const [note, setNote] = useState('');
@@ -19,25 +18,31 @@ const ClockInConfirmation = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Confirm Clock In</Text>
-      {clockInTime && (
-        <Text style={styles.timeText}>
-          Clock In Time: {clockInTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      )}
-      <TextInput
-        placeholder="Add a note (optional)"
-        value={note}
-        onChangeText={setNote}
-        style={styles.input}
-        placeholderTextColor="#aaa"
-      />
-      <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={confirmClockIn}>
-        <Text style={styles.buttonText}>Confirm Clock In</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => navigation.goBack()}>
-        <Text style={styles.buttonText}>Cancel</Text>
-      </TouchableOpacity>
+      <View style={styles.header}>
+        <Image source={require('./assets/ls_logo.jpeg')} style={styles.logo} />
+        <Text style={styles.appName}>ShiftTracker</Text>
+      </View>
+      <View style={styles.content}>
+        <Text style={styles.title}>Confirm Clock In</Text>
+        {clockInTime && (
+          <Text style={styles.timeText}>
+            Clock In Time: {clockInTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        )}
+        <TextInput
+          placeholder="Add a note (optional)"
+          value={note}
+          onChangeText={setNote}
+          style={styles.input}
+          placeholderTextColor="#aaa"
+        />
+        <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={confirmClockIn}>
+          <Text style={styles.buttonText}>Confirm Clock In</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => navigation.goBack()}>
+          <Text style={styles.buttonText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -45,10 +50,33 @@ const ClockInConfirmation = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    width: '100%',
+  },
+  logo: {
+    width: 30,
+    height: 30,
+    marginRight: 10,
+  },
+  appName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0288D1',
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
   },
   title: {
     fontSize: 24,
