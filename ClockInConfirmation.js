@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, SafeAreaView } from 'react-native';
 
 const ClockInConfirmation = ({ route, navigation }) => {
   const [note, setNote] = useState('');
@@ -17,9 +17,9 @@ const ClockInConfirmation = ({ route, navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Image source={require('./assets/ls_logo.jpeg')} style={styles.logo} />
+        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
         <Text style={styles.appName}>ShiftTracker</Text>
       </View>
       <View style={styles.content}>
@@ -43,7 +43,7 @@ const ClockInConfirmation = ({ route, navigation }) => {
           <Text style={styles.buttonText}>Cancel</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -32,7 +32,7 @@ const LoginScreen = ({ navigation }) => {
   return (
     <ImageBackground source={{ uri: 'https://source.unsplash.com/random' }} style={styles.background}>
       <View style={styles.container}>
-        <Image source={require('./assets/ls_logo.jpeg')} style={styles.logo} />
+        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
         <Text style={styles.appName}>ShiftTracker</Text>
         <TextInput
           placeholder="Email"

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, ActivityIndicator, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Alert, ActivityIndicator, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
 import * as Location from 'expo-location';
 import { auth, firestore } from './firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, limit, getDocs, getDoc, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { MaterialIcons } from '@expo/vector-icons'; // Import icons
 
-// San Francisco's coordinates and radius in km
-const SF_CENTER = { latitude: 37.7749, longitude: -122.4194 };
+// Edmonton's coordinates and radius in km
+const EDMONTON_CENTER = { latitude: 53.5461, longitude: -113.4938 };
 const RADIUS = 15;
 
 const HomeScreen = ({ navigation }) => {
@@ -46,10 +46,10 @@ const HomeScreen = ({ navigation }) => {
     return R * c;
   };
 
-  const isWithinSanFrancisco = (location) => {
+  const isWithinEdmonton = (location) => {
     const distance = haversineDistance(
       { latitude: location.coords.latitude, longitude: location.coords.longitude },
-      SF_CENTER
+      EDMONTON_CENTER
     );
     return distance <= RADIUS;
   };
@@ -96,7 +96,7 @@ const HomeScreen = ({ navigation }) => {
     setLoading(true);
     const user = auth.currentUser;
     if (user && location) {
-      if (isWithinSanFrancisco(location)) {
+      if (isWithinEdmonton(location)) {
         try {
           const docRef = await addDoc(collection(firestore, 'clockins'), {
             userId: user.uid,
@@ -116,7 +116,7 @@ const HomeScreen = ({ navigation }) => {
           console.error('Clock in error:', error);
         }
       } else {
-        Alert.alert('Error', 'You must be within San Francisco to clock in');
+        Alert.alert('Error', 'You must be within Edmonton to clock in');
       }
     }
     setLoading(false);
@@ -126,7 +126,7 @@ const HomeScreen = ({ navigation }) => {
     setLoading(true);
     const user = auth.currentUser;
     if (user && location) {
-      if (isWithinSanFrancisco(location)) {
+      if (isWithinEdmonton(location)) {
         try {
           await addDoc(collection(firestore, 'clockins'), {
             userId: user.uid,
@@ -144,7 +144,7 @@ const HomeScreen = ({ navigation }) => {
           console.error('Clock out error:', error);
         }
       } else {
-        Alert.alert('Error', 'You must be within San Francisco to clock out');
+        Alert.alert('Error', 'You must be within Edmonton to clock out');
       }
     }
     setLoading(false);
@@ -176,9 +176,10 @@ const HomeScreen = ({ navigation }) => {
   }
 
   return (
+    <SafeAreaView style={styles.container}>
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image source={require('./assets/ls_logo.jpeg')} style={styles.logo} />
+        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
         <Text style={styles.appName}>ShiftTracker</Text>
       </View>
       <View style={styles.content}>
@@ -219,6 +220,7 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
     </View>
+  </SafeAreaView>
   );
 };
 
