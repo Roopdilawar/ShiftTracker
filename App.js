@@ -7,6 +7,10 @@ import SignUpScreen from './SignUpScreen';
 import HomeScreen from './HomeScreen';
 import ClockInConfirmation from './ClockInConfirmation';
 import ClockOutConfirmation from './ClockOutConfirmation';
+import DriverList from './DriverList';
+import DriverCalendar from './DriverCalendar';
+import DateSummary from './DateSummary';
+import NewDriver from './NewDriver';
 
 const Stack = createStackNavigator();
 
@@ -17,27 +21,47 @@ const App = () => {
         <Stack.Screen
           name="Login"
           component={LoginScreen}
-          options={{ headerShown: false }} // Hide header for Login screen
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="SignUp"
           component={SignUpScreen}
-          options={{ headerShown: false }} // Hide header for SignUp screen
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ headerShown: false }} // Hide header for Home screen
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="ClockInConfirmation"
           component={ClockInConfirmation}
-          options={{ headerShown: false }} // Hide header for ClockInConfirmation screen
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="ClockOutConfirmation"
           component={ClockOutConfirmation}
-          options={{ headerShown: false }} // Hide header for ClockOutConfirmation screen
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="DriverList"
+          component={DriverList}
+          options={{ title: 'Drivers' }}
+        />
+        <Stack.Screen
+          name="DriverCalendar"
+          component={DriverCalendar}
+          options={({ route }) => ({ title: route.params.driverName })}
+        />
+        <Stack.Screen
+          name="DateSummary"
+          component={DateSummary}
+          options={{ title: 'Summary' }}
+        />
+        <Stack.Screen
+          name="NewDriver"
+          component={NewDriver}
+          options={{ title: 'Add New Driver' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -11,7 +11,12 @@ const LoginScreen = ({ navigation }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        navigation.replace('Home');
+        // Check if the email matches the specific admin email
+        if (user.email === 'swastik@lscarriers.ca') {
+          navigation.replace('DriverList'); // Corrected typo here
+        } else {
+          navigation.replace('Home');
+        }
       }
     });
 
@@ -21,12 +26,18 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigation.replace('Home');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // After login, check if the email matches the specific admin email
+      if (userCredential.user.email === 'swastik@lscarriers.ca') { // Fixed the reference here
+        navigation.replace('DriverList');
+      } else {
+        navigation.replace('Home');
+      }
     } catch (error) {
       Alert.alert('Login Error', error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
