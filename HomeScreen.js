@@ -57,8 +57,7 @@ const HomeScreen = ({ navigation }) => {
       { latitude: location.coords.latitude, longitude: location.coords.longitude },
       EDMONTON_CENTER
     );
-    // return distance <= RADIUS;
-    return true;
+    return distance <= RADIUS;
   };
 
   const checkClockStatus = async () => {
