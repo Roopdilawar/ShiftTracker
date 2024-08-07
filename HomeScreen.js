@@ -7,8 +7,8 @@ import { signOut } from 'firebase/auth';
 import { MaterialIcons } from '@expo/vector-icons'; // Import icons
 
 // Edmonton's coordinates and radius in km
-const EDMONTON_CENTER = { latitude: 37.7749, longitude: -122.4194 };
-const RADIUS = 150;
+const EDMONTON_CENTER = { latitude: 53.5461, longitude: -113.4938 };
+const RADIUS = 20;
 
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
