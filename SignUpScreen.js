@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
-import { auth } from './firebase';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import { auth, firestore } from './firebase'; // Adjust this import to match the export
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore'; // Make sure this is correctly imported
 
 const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -13,9 +14,19 @@ const SignUpScreen = ({ navigation }) => {
     setLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
       .then(userCredential => {
+        // Update the user's profile
         updateProfile(userCredential.user, { displayName: fullName })
           .then(() => {
-            navigation.navigate('Home');
+            // Create a document in Firestore in the 'users' collection
+            const userRef = doc(firestore, 'users', userCredential.user.uid);
+            setDoc(userRef, {
+              fullName: fullName,
+              email: email,
+            }).then(() => {
+              navigation.navigate('Home');
+            }).catch((error) => {
+              console.error('Failed to create user document:', error);
+            });
           })
           .catch(error => {
             console.error('Profile update error:', error);
