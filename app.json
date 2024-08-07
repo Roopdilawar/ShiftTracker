@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.roopdilawar.ShiftTracker"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,6 +23,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "116d09d7-9417-43a9-b3ed-a7dbaf2bdcc0"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/116d09d7-9417-43a9-b3ed-a7dbaf2bdcc0"
     }
   }
 }
