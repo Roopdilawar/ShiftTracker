@@ -10,7 +10,6 @@ import ClockOutConfirmation from './ClockOutConfirmation';
 import DriverList from './DriverList';
 import DriverCalendar from './DriverCalendar';
 import DateSummary from './DateSummary';
-import NewDriver from './NewDriver';
 
 const Stack = createStackNavigator();
 
@@ -57,11 +56,6 @@ const App = () => {
           name="DateSummary"
           component={DateSummary}
           options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="NewDriver"
-          component={NewDriver}
-          options={{ title: 'Add New Driver' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

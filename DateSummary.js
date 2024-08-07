@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, SafeAreaView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, SafeAreaView, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { firestore } from './firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 const DateSummary = ({ route, navigation }) => {
   const { driverId, date } = route.params;
   const [summaryData, setSummaryData] = useState(null);
+  const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ const DateSummary = ({ route, navigation }) => {
         let clockin = null;
         let clockout = null;
         let notes = [];
+        let entriesList = [];
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -30,6 +32,10 @@ const DateSummary = ({ route, navigation }) => {
             clockin = data.timestamp.toDate();
           } else if (data.type === 'clockout') {
             clockout = data.timestamp.toDate();
+            console.log(data)
+            if (data.entries && data.entries.length > 0) {
+              entriesList = data.entries;
+            }
           }
           if (data.note) {
             notes.push(data.note);
@@ -44,6 +50,7 @@ const DateSummary = ({ route, navigation }) => {
             totalHours,
             notes: notes.join('; '),
           });
+          setEntries(entriesList);
         } else {
           setSummaryData({
             startTime: 'N/A',
@@ -51,6 +58,7 @@ const DateSummary = ({ route, navigation }) => {
             totalHours: 0,
             notes: 'No complete shifts recorded.',
           });
+          setEntries([]);
         }
       } catch (error) {
         console.error('Error fetching shift details:', error);
@@ -81,7 +89,7 @@ const DateSummary = ({ route, navigation }) => {
         <Text style={styles.appName}>ShiftTracker</Text>
         <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
       </View>
-      <View style={styles.content}>
+      <ScrollView style={styles.content}>
         <View style={styles.card}>
           <Text style={styles.dateText}>{new Date(date).toLocaleDateString()}</Text>
 
@@ -105,7 +113,23 @@ const DateSummary = ({ route, navigation }) => {
             <Text style={styles.text}>Notes: {summaryData.notes}</Text>
           </View>
         </View>
-      </View>
+
+        {entries.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Entries</Text>
+            {entries.map((entry, index) => (
+              <View key={index} style={styles.entryRow}>
+                <Text style={styles.entryText}>Company: {entry.companyName}</Text>
+                <Text style={styles.entryText}>Hours: {entry.hours}</Text>
+                <Text style={styles.entryText}>Ticket #: {entry.ticketNumber}</Text>
+                {entry.note && entry.note.length > 0 && (
+                  <Text style={styles.entryText}>Note: {entry.note}</Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -141,8 +165,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   centered: {
     flex: 1,
@@ -161,6 +183,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 5,
+    marginBottom: 20,
     width: '100%',
     maxWidth: 400,
   },
@@ -179,6 +202,22 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     marginLeft: 10,
+    color: '#555',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  entryRow: {
+    marginBottom: 15,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+  },
+  entryText: {
+    fontSize: 15,
     color: '#555',
   },
 });

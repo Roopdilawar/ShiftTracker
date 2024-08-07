@@ -29,6 +29,12 @@ const HomeScreen = ({ navigation }) => {
     })();
 
     checkClockStatus();
+
+    const interval = setInterval(() => {
+      checkClockStatus();
+    }, 60000); // Update status every minute
+
+    return () => clearInterval(interval); // Cleanup interval on component unmount
   }, []);
 
   const haversineDistance = (coords1, coords2) => {
@@ -51,7 +57,8 @@ const HomeScreen = ({ navigation }) => {
       { latitude: location.coords.latitude, longitude: location.coords.longitude },
       EDMONTON_CENTER
     );
-    return distance <= RADIUS;
+    // return distance <= RADIUS;
+    return true;
   };
 
   const checkClockStatus = async () => {
@@ -122,7 +129,7 @@ const HomeScreen = ({ navigation }) => {
     setLoading(false);
   };
 
-  const handleClockOut = async (note) => {
+  const handleClockOut = async (note, entries) => {
     setLoading(true);
     const user = auth.currentUser;
     if (user && location) {
@@ -136,7 +143,8 @@ const HomeScreen = ({ navigation }) => {
               longitude: location.coords.longitude
             },
             timestamp: serverTimestamp(),
-            note: note || ''
+            note: note || '',
+            entries: entries || [], // Add entries to the document
           });
           setStatus('clockedOut');
         } catch (error) {
@@ -177,50 +185,50 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
-        <Text style={styles.appName}>ShiftTracker</Text>
-      </View>
-      <View style={styles.content}>
-        <View style={styles.statusContainer}>
-          {status === 'clockedIn' ? (
-            <>
-              <MaterialIcons name="access-time" size={48} color="green" />
-              <Text style={styles.statusText}>Clocked In</Text>
-              <Text style={styles.hoursText}>{calculateHoursSinceClockIn()} hours since clocked in</Text>
-            </>
-          ) : (
-            <>
-              <MaterialIcons name="access-time" size={48} color="red" />
-              <Text style={styles.statusText}>Not Clocked In</Text>
-            </>
-          )}
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
+          <Text style={styles.appName}>ShiftTracker</Text>
         </View>
-        {status === 'clockedOut' && (
-          <TouchableOpacity
-            style={[styles.button, styles.clockInButton]}
-            onPress={() => navigation.navigate('ClockInConfirmation', { handleClockIn })}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Clock In</Text>
+        <View style={styles.content}>
+          <View style={styles.statusContainer}>
+            {status === 'clockedIn' ? (
+              <>
+                <MaterialIcons name="access-time" size={48} color="green" />
+                <Text style={styles.statusText}>Clocked In</Text>
+                <Text style={styles.hoursText}>{calculateHoursSinceClockIn()} hours since clocked in</Text>
+              </>
+            ) : (
+              <>
+                <MaterialIcons name="access-time" size={48} color="red" />
+                <Text style={styles.statusText}>Not Clocked In</Text>
+              </>
+            )}
+          </View>
+          {status === 'clockedOut' && (
+            <TouchableOpacity
+              style={[styles.button, styles.clockInButton]}
+              onPress={() => navigation.navigate('ClockInConfirmation', { handleClockIn })}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Clock In</Text>
+            </TouchableOpacity>
+          )}
+          {status === 'clockedIn' && (
+            <TouchableOpacity
+              style={[styles.button, styles.clockOutButton]}
+              onPress={() => navigation.navigate('ClockOutConfirmation', { handleClockOut, clockInTime })}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Clock Out</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
-        )}
-        {status === 'clockedIn' && (
-          <TouchableOpacity
-            style={[styles.button, styles.clockOutButton]}
-            onPress={() => navigation.navigate('ClockOutConfirmation', { handleClockOut, clockInTime })}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Clock Out</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  </SafeAreaView>
+    </SafeAreaView>
   );
 };
 

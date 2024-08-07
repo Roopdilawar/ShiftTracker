@@ -20,7 +20,7 @@ const ClockOutConfirmation = ({ route, navigation }) => {
   }, [clockInTime]);
 
   const confirmClockOut = () => {
-    handleClockOut(note);
+    handleClockOut(note, entries); // Pass entries to handleClockOut
     navigation.goBack();
   };
 
