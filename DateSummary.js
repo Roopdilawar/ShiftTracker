@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { firestore } from './firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { MaterialIcons } from '@expo/vector-icons';
 
-const DateSummary = ({ route }) => {
+const DateSummary = ({ route, navigation }) => {
   const { driverId, date } = route.params;
   const [summaryData, setSummaryData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,43 +64,121 @@ const DateSummary = ({ route }) => {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.dateText}>Date: {date}</Text>
-      <Text style={styles.text}>Start Time: {summaryData.startTime}</Text>
-      <Text style={styles.text}>End Time: {summaryData.endTime}</Text>
-      <Text style={styles.text}>Total Hours: {summaryData.totalHours}</Text>
-      <Text style={styles.text}>Notes: {summaryData.notes}</Text>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={24} color="#007AFF" />
+        </TouchableOpacity>
+        <Text style={styles.appName}>ShiftTracker</Text>
+        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
+      </View>
+      <View style={styles.content}>
+        <View style={styles.card}>
+          <Text style={styles.dateText}>{new Date(date).toLocaleDateString()}</Text>
+
+          <View style={styles.infoRow}>
+            <MaterialIcons name="access-time" size={24} color="#555" />
+            <Text style={styles.text}>Start Time: {summaryData.startTime}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <MaterialIcons name="access-time" size={24} color="#555" />
+            <Text style={styles.text}>End Time: {summaryData.endTime}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <MaterialIcons name="timelapse" size={24} color="#555" />
+            <Text style={styles.text}>Total Hours: {summaryData.totalHours}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <MaterialIcons name="note" size={24} color="#555" />
+            <Text style={styles.text}>Notes: {summaryData.notes}</Text>
+          </View>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#F7F7F7',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  backButton: {
+    padding: 8,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
+  appName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  card: {
+    backgroundColor: '#FFF',
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
+    width: '100%',
+    maxWidth: 400,
+  },
   dateText: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#007AFF',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 10,
-    color: '#333',
   },
   text: {
     fontSize: 16,
-    marginBottom: 5,
+    marginLeft: 10,
     color: '#555',
   },
 });

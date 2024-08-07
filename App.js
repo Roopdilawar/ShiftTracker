@@ -46,17 +46,17 @@ const App = () => {
         <Stack.Screen
           name="DriverList"
           component={DriverList}
-          options={{ title: 'Drivers' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="DriverCalendar"
           component={DriverCalendar}
-          options={({ route }) => ({ title: route.params.driverName })}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="DateSummary"
           component={DateSummary}
-          options={{ title: 'Summary' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="NewDriver"

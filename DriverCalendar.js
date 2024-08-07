@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { firestore } from './firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { MaterialIcons } from '@expo/vector-icons'; // Importing icons
 
 const DriverCalendar = ({ route, navigation }) => {
   const { driverId, driverName } = route.params;
@@ -67,52 +68,115 @@ const DriverCalendar = ({ route, navigation }) => {
     fetchWorkHours();
   }, [driverId]);
 
-  const renderDay = (day) => (
-    <View style={styles.dayContainer}>
-      <Text style={styles.dateText}>{day.day}</Text>
-      {hoursWorked[day.dateString] && (
-        <Text style={styles.hoursText}>{hoursWorked[day.dateString]}h</Text>
-      )}
-    </View>
-  );
-
   const handleDayPress = (day) => {
-    console.log("Navigating")
+    console.log("Navigating to DateSummary for", day.dateString);
     navigation.navigate('DateSummary', { driverId, date: day.dateString });
   };
 
+  // Prepare marked dates with hours worked and a dot marking
+  const markedDates = Object.keys(hoursWorked).reduce((acc, date) => {
+    acc[date] = {
+      customStyles: {
+        container: {
+          backgroundColor: '#E0F7FA',
+          borderRadius: 10,
+        },
+        text: {
+          color: '#007AFF',
+          fontWeight: 'bold',
+        },
+      },
+      // Add a dot marker and the custom text for hours worked
+      dots: [{ key: 'workHours', color: '#50cebb' }],
+      customText: `${hoursWorked[date]}h`, // For showing hours worked
+    };
+    console.log(hoursWorked[date])
+    return acc;
+  }, {});
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{driverName}'s Calendar</Text>
-      <Calendar
-        onDayPress={handleDayPress}
-        markedDates={Object.keys(hoursWorked).reduce((acc, date) => {
-          acc[date] = {
-            selected: true,
-            marked: true,
-            customStyles: {
-              container: {
-                backgroundColor: '#E0F7FA',
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={24} color="#007AFF" />
+        </TouchableOpacity>
+        <Text style={styles.appName}>ShiftTracker</Text>
+        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
+      </View>
+      <View style={styles.content}>
+        <Text style={styles.title}>{driverName}'s Calendar</Text>
+        <Calendar
+          onDayPress={handleDayPress}
+          markedDates={markedDates}
+          markingType={'multi-dot'} // Use multi-dot to show both marking and hours
+          renderArrow={(direction) => (
+            <Text style={styles.arrow}>{direction === 'left' ? '<' : '>'}</Text>
+          )}
+          theme={{
+            'stylesheet.day.multiDot': {
+              base: {
+                width: 32,
+                height: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
               },
               text: {
+                marginTop: 4,
+                fontSize: 16,
+              },
+              dot: {
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                marginTop: 1,
+              },
+              selectedDot: {
+                backgroundColor: '#ffffff',
+              },
+              customText: {
+                fontSize: 10,
                 color: '#007AFF',
+                marginTop: 2,
               },
             },
-          };
-          return acc;
-        }, {})}
-        markingType={'custom'}
-        dayComponent={({ date }) => renderDay(date)}
-      />
-    </View>
+          }}
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#F7F7F7',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  backButton: {
+    padding: 8,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
+  appName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
   },
   title: {
     fontSize: 20,
@@ -121,23 +185,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333',
   },
-  dayContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 60,
-    height: 60,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginVertical: 4, // Adds space between the date text and hours text
-  },
-  dateText: {
-    fontSize: 14,
-    color: '#000',
-  },
-  hoursText: {
-    fontSize: 12,
+  arrow: {
+    fontSize: 16,
     color: '#007AFF',
-    marginTop: 2, // Adds space between the date and hours text
   },
 });
 
