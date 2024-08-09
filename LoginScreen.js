@@ -34,7 +34,7 @@ const LoginScreen = ({ navigation }) => {
         navigation.replace('Home');
       }
     } catch (error) {
-      Alert.alert('Login Error', error.message);
+      Alert.alert('Login Error', 'Incorrect Email or Password ');
     } finally {
       setLoading(false);
     }

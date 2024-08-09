@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, SafeAreaView, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase storage functions
+import uuid from 'react-native-uuid';
 
 const ClockOutConfirmation = ({ route, navigation }) => {
   const [note, setNote] = useState('');
@@ -11,6 +25,7 @@ const ClockOutConfirmation = ({ route, navigation }) => {
   const [companyName, setCompanyName] = useState('');
   const [ticketNumber, setTicketNumber] = useState('');
   const [hours, setHours] = useState('');
+  const [image, setImage] = useState(null);
 
   useEffect(() => {
     const currentTime = new Date();
@@ -19,17 +34,105 @@ const ClockOutConfirmation = ({ route, navigation }) => {
     setShiftDuration((diff / (1000 * 60 * 60)).toFixed(2)); // Hours with 2 decimal places
   }, [clockInTime]);
 
-  const confirmClockOut = () => {
-    handleClockOut(note, entries); // Pass entries to handleClockOut
-    navigation.goBack();
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert('Permission to access gallery is required!');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const resizedImage = await resizeImage(result.assets[0].uri);
+      setImage(resizedImage.uri);
+      console.log('Image selected and resized:', resizedImage.uri);
+    }
   };
 
-  const addEntry = () => {
-    if (companyName && ticketNumber && hours) {
-      setEntries([...entries, { companyName, ticketNumber, hours }]);
+  const resizeImage = async (uri) => {
+    // Resize the image to a max width of 800 pixels and maintain aspect ratio
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 800 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    return manipResult;
+  };
+
+  const uploadImage = async (uri) => {
+    if (!uri) return null;
+    const storage = getStorage();
+    const imageRef = ref(storage, `images/${uuid.v4()}.jpg`);
+
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      console.log('uri:', uri)
+      console.log('blob:', blob)
+      console.log('imageRef:', imageRef)
+
+
+      await uploadBytes(imageRef, blob);
+      const downloadUrl = await getDownloadURL(imageRef);
+      return downloadUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error.code, error.message);
+      return null;
+    }
+  };
+
+
+  const confirmClockOut = async () => {
+      console.log('Confirming clock out...');
+      try {
+          const updatedEntries = await Promise.all(
+              entries.map(async (entry) => {
+                  console.log('Processing entry:', entry);
+                  return {
+                      ...entry,
+                      image: entry.image ? await uploadImage(entry.image) : null,
+                  };
+              })
+          );
+
+          console.log('Clock out confirmed with entries:', updatedEntries);
+          handleClockOut(note, updatedEntries); // Pass entries with images to handleClockOut
+          resetState(); // Reset all relevant states after clock out
+          navigation.goBack();
+      } catch (error) {
+          console.error('Error during clock out:', error);
+          Alert.alert('Error', 'Failed to clock out properly.');
+      }
+  };
+
+  const resetState = () => {
+      setEntries([]);
       setCompanyName('');
       setTicketNumber('');
       setHours('');
+      setImage(null);
+      setNote('');
+      // You may also want to reset `clockOutTime` and `shiftDuration` if they should not persist
+      setClockOutTime(null);
+      setShiftDuration(null);
+  };
+
+  const addEntry = async () => {
+    if (companyName && ticketNumber && hours) {
+      setEntries([...entries, { companyName, ticketNumber, hours, image }]);
+      setCompanyName('');
+      setTicketNumber('');
+      setHours('');
+      setImage(null); // Reset the image selection
+    } else {
+      Alert.alert('Please fill in all fields');
     }
   };
 
@@ -80,6 +183,10 @@ const ClockOutConfirmation = ({ route, navigation }) => {
             placeholderTextColor="#aaa"
             keyboardType="numeric"
           />
+          <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+            <Text style={styles.buttonText}>Pick Image</Text>
+          </TouchableOpacity>
+          {image && <Image source={{ uri: image }} style={styles.thumbnail} />}
           <TouchableOpacity style={styles.addButton} onPress={addEntry}>
             <Text style={styles.buttonText}>Add Entry</Text>
           </TouchableOpacity>
@@ -89,6 +196,7 @@ const ClockOutConfirmation = ({ route, navigation }) => {
                 <Text style={styles.entryText}>Company: {entry.companyName}</Text>
                 <Text style={styles.entryText}>Ticket #: {entry.ticketNumber}</Text>
                 <Text style={styles.entryText}>Hours: {entry.hours}</Text>
+                {entry.image && <Image source={{ uri: entry.image }} style={styles.thumbnail} />}
               </View>
             ))}
           </View>
@@ -180,6 +288,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
     backgroundColor: '#fff',
+  },
+  imageButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    backgroundColor: '#0288D1',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  thumbnail: {
+    width: 100,
+    height: 100,
+    resizeMode: 'cover',
+    marginVertical: 10,
+    borderRadius: 5,
   },
   addButton: {
     paddingVertical: 15,

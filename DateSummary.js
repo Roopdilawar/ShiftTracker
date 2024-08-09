@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, SafeAreaView, TouchableOpacity, Image, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  Modal
+} from 'react-native';
 import { firestore } from './firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -9,15 +19,18 @@ const DateSummary = ({ route, navigation }) => {
   const [summaryData, setSummaryData] = useState(null);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     const fetchShiftDetails = async () => {
+      setLoading(true);
       try {
         const q = query(
-          collection(firestore, 'clockins'), // Ensure 'clockins' is your collection name
+          collection(firestore, 'clockins'),
           where('userId', '==', driverId),
           where('timestamp', '>=', new Date(date)),
-          where('timestamp', '<', new Date(new Date(date).setDate(new Date(date).getDate() + 1))) // For the specific day
+          where('timestamp', '<', new Date(new Date(date).setDate(new Date(date).getDate() + 1)))
         );
 
         const querySnapshot = await getDocs(q);
@@ -32,10 +45,7 @@ const DateSummary = ({ route, navigation }) => {
             clockin = data.timestamp.toDate();
           } else if (data.type === 'clockout') {
             clockout = data.timestamp.toDate();
-            console.log(data)
-            if (data.entries && data.entries.length > 0) {
-              entriesList = data.entries;
-            }
+            entriesList = data.entries || [];
           }
           if (data.note) {
             notes.push(data.note);
@@ -69,6 +79,16 @@ const DateSummary = ({ route, navigation }) => {
 
     fetchShiftDetails();
   }, [driverId, date]);
+
+  const openImageModal = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setModalVisible(true);
+  };
+
+  const closeImageModal = () => {
+    setSelectedImage(null);
+    setModalVisible(false);
+  };
 
   if (loading) {
     return (
@@ -122,7 +142,16 @@ const DateSummary = ({ route, navigation }) => {
                 <Text style={styles.entryText}>Company: {entry.companyName}</Text>
                 <Text style={styles.entryText}>Hours: {entry.hours}</Text>
                 <Text style={styles.entryText}>Ticket #: {entry.ticketNumber}</Text>
-                {entry.note && entry.note.length > 0 && (
+                {entry.image && (
+                  <TouchableOpacity onPress={() => openImageModal(entry.image)}>
+                    <Image
+                      source={{ uri: entry.image }}
+                      style={styles.entryImage}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                )}
+                {entry.note && (
                   <Text style={styles.entryText}>Note: {entry.note}</Text>
                 )}
               </View>
@@ -130,6 +159,25 @@ const DateSummary = ({ route, navigation }) => {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeImageModal}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity style={styles.modalBackground} onPress={closeImageModal}>
+            {selectedImage && (
+              <Image
+                source={{ uri: selectedImage }}
+                style={styles.fullImage}
+                resizeMode="contain"
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -219,6 +267,28 @@ const styles = StyleSheet.create({
   entryText: {
     fontSize: 15,
     color: '#555',
+  },
+  entryImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginTop: 5,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  modalBackground: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImage: {
+    width: '90%',
+    height: '90%',
   },
 });
 
