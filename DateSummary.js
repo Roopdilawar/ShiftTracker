@@ -16,8 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 const DateSummary = ({ route, navigation }) => {
   const { driverId, date } = route.params;
-  const [summaryData, setSummaryData] = useState(null);
-  const [entries, setEntries] = useState([]);
+  const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -34,9 +33,8 @@ const DateSummary = ({ route, navigation }) => {
         );
 
         const querySnapshot = await getDocs(q);
+        const shiftData = [];
         let clockin = null;
-        let clockout = null;
-        let notes = [];
         let entriesList = [];
 
         querySnapshot.forEach((doc) => {
@@ -44,32 +42,26 @@ const DateSummary = ({ route, navigation }) => {
           if (data.type === 'clockin') {
             clockin = data.timestamp.toDate();
           } else if (data.type === 'clockout') {
-            clockout = data.timestamp.toDate();
+            const clockout = data.timestamp.toDate();
+            const totalHours = ((clockout - clockin) / (1000 * 60 * 60)).toFixed(2);
+            const notes = data.note || '';
             entriesList = data.entries || [];
-          }
-          if (data.note) {
-            notes.push(data.note);
+
+            shiftData.push({
+              startTime: clockin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              endTime: clockout.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              totalHours,
+              notes,
+              entries: entriesList,
+            });
+
+            // Reset clockin and entriesList for the next shift
+            clockin = null;
+            entriesList = [];
           }
         });
 
-        if (clockin && clockout) {
-          const totalHours = ((clockout - clockin) / (1000 * 60 * 60)).toFixed(2);
-          setSummaryData({
-            startTime: clockin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            endTime: clockout.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            totalHours,
-            notes: notes.join('; '),
-          });
-          setEntries(entriesList);
-        } else {
-          setSummaryData({
-            startTime: 'N/A',
-            endTime: 'N/A',
-            totalHours: 0,
-            notes: 'No complete shifts recorded.',
-          });
-          setEntries([]);
-        }
+        setShifts(shiftData);
       } catch (error) {
         console.error('Error fetching shift details:', error);
       } finally {
@@ -110,52 +102,56 @@ const DateSummary = ({ route, navigation }) => {
         <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
       </View>
       <ScrollView style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.dateText}>{new Date(date).toLocaleDateString()}</Text>
-
-          <View style={styles.infoRow}>
-            <MaterialIcons name="access-time" size={24} color="#555" />
-            <Text style={styles.text}>Start Time: {summaryData.startTime}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <MaterialIcons name="access-time" size={24} color="#555" />
-            <Text style={styles.text}>End Time: {summaryData.endTime}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <MaterialIcons name="timelapse" size={24} color="#555" />
-            <Text style={styles.text}>Total Hours: {summaryData.totalHours}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <MaterialIcons name="note" size={24} color="#555" />
-            <Text style={styles.text}>Notes: {summaryData.notes}</Text>
-          </View>
-        </View>
-
-        {entries.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Entries</Text>
-            {entries.map((entry, index) => (
-              <View key={index} style={styles.entryRow}>
-                <Text style={styles.entryText}>Company: {entry.companyName}</Text>
-                <Text style={styles.entryText}>Hours: {entry.hours}</Text>
-                <Text style={styles.entryText}>Ticket #: {entry.ticketNumber}</Text>
-                {entry.image && (
-                  <TouchableOpacity onPress={() => openImageModal(entry.image)}>
-                    <Image
-                      source={{ uri: entry.image }}
-                      style={styles.entryImage}
-                      resizeMode="contain"
-                    />
-                  </TouchableOpacity>
-                )}
-                {entry.note && (
-                  <Text style={styles.entryText}>Note: {entry.note}</Text>
-                )}
+        <Text style={styles.dateText}>{new Date(date).toLocaleDateString()}</Text>
+        {shifts.length > 0 ? (
+          shifts.map((shift, index) => (
+            <View key={index} style={styles.card}>
+              <Text style={styles.shiftTitle}>Shift {index + 1}</Text>
+              <View style={styles.infoRow}>
+                <MaterialIcons name="access-time" size={24} color="#555" />
+                <Text style={styles.text}>Start Time: {shift.startTime}</Text>
               </View>
-            ))}
+              <View style={styles.infoRow}>
+                <MaterialIcons name="access-time" size={24} color="#555" />
+                <Text style={styles.text}>End Time: {shift.endTime}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <MaterialIcons name="timelapse" size={24} color="#555" />
+                <Text style={styles.text}>Total Hours: {shift.totalHours}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <MaterialIcons name="note" size={24} color="#555" />
+                <Text style={styles.text}>Notes: {shift.notes}</Text>
+              </View>
+              {shift.entries.length > 0 && (
+                <View>
+                  <Text style={styles.sectionTitle}>Entries</Text>
+                  {shift.entries.map((entry, index) => (
+                    <View key={index} style={styles.entryRow}>
+                      <Text style={styles.entryText}>Company: {entry.companyName}</Text>
+                      <Text style={styles.entryText}>Hours: {entry.hours}</Text>
+                      <Text style={styles.entryText}>Ticket #: {entry.ticketNumber}</Text>
+                      {entry.image && (
+                        <TouchableOpacity onPress={() => openImageModal(entry.image)}>
+                          <Image
+                            source={{ uri: entry.image }}
+                            style={styles.entryImage}
+                            resizeMode="contain"
+                          />
+                        </TouchableOpacity>
+                      )}
+                      {entry.note && (
+                        <Text style={styles.entryText}>Note: {entry.note}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.text}>No shifts recorded for this day.</Text>
           </View>
         )}
       </ScrollView>
@@ -241,6 +237,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
     color: '#007AFF',
+  },
+  shiftTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
   },
   infoRow: {
     flexDirection: 'row',

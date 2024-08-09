@@ -112,22 +112,26 @@ const DriverList = ({ navigation }) => {
         });
       }
 
-      console.log(reportData)
+      console.log(reportData);
 
       // Create Excel file using xlsx
       const ws = XLSX.utils.json_to_sheet(reportData);
+
+      // Create a new workbook
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Report');
 
+      // Write workbook to base64
       const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
 
       // Save to file system
-      const fileUri = FileSystem.documentDirectory + `ShiftTracker_Report_${monthNames[selectedMonth]}.xlsx`;
+      const fileUri =
+        FileSystem.documentDirectory +
+        `ShiftTracker_Report_${monthNames[selectedMonth]}.xlsx`;
       await FileSystem.writeAsStringAsync(fileUri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // ... inside your generateReport function
       Alert.alert(
         'Success',
         `Report saved to ${fileUri}`,
@@ -146,7 +150,6 @@ const DriverList = ({ navigation }) => {
         ],
         { cancelable: true }
       );
-
     } catch (error) {
       console.error('Error generating report:', error);
       Alert.alert('Error', 'Failed to generate report.');
@@ -194,7 +197,10 @@ const DriverList = ({ navigation }) => {
           </TouchableOpacity>
         )}
       />
-      <TouchableOpacity style={styles.generateButton} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity
+        style={styles.generateButton}
+        onPress={() => setModalVisible(true)}
+      >
         <Text style={styles.buttonText}>Generate Monthly Report</Text>
       </TouchableOpacity>
 
@@ -215,7 +221,10 @@ const DriverList = ({ navigation }) => {
               <TouchableOpacity style={styles.modalButton} onPress={generateReport}>
                 <Text style={styles.buttonText}>Generate</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
