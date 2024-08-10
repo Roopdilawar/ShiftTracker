@@ -87,6 +87,7 @@ const DriverList = ({ navigation }) => {
         const clockinsSnapshot = await getDocs(clockinsQuery);
 
         let totalHours = 0;
+        let totalFuel = 0;
         let lastClockIn = null;
 
         clockinsSnapshot.forEach((doc) => {
@@ -100,11 +101,17 @@ const DriverList = ({ navigation }) => {
             totalHours += hours;
             lastClockIn = null;
           }
+
+          // Sum fuel usage if available
+          if (data.fuel) {
+            totalFuel += parseFloat(data.fuel);
+          }
         });
 
         reportData.push({
           Name: driver.name,
           'Total Hours': totalHours.toFixed(2),
+          'Total Fuel (L)': totalFuel.toFixed(2), // Add fuel usage
         });
       }
 

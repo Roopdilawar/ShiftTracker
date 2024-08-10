@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  Modal
+  Modal,
 } from 'react-native';
 import { firestore } from './firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const DateSummary = ({ route, navigation }) => {
   const { driverId, date } = route.params;
@@ -44,7 +44,8 @@ const DateSummary = ({ route, navigation }) => {
           } else if (data.type === 'clockout') {
             const clockout = data.timestamp.toDate();
             const totalHours = ((clockout - clockin) / (1000 * 60 * 60)).toFixed(2);
-            const notes = data.note || '';
+            const notes = data.note || 'N/A';
+            const fuel = data.fuel || 'N/A';
             entriesList = data.entries || [];
 
             shiftData.push({
@@ -52,6 +53,7 @@ const DateSummary = ({ route, navigation }) => {
               endTime: clockout.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               totalHours,
               notes,
+              fuel,
               entries: entriesList,
             });
 
@@ -123,11 +125,15 @@ const DateSummary = ({ route, navigation }) => {
                 <MaterialIcons name="note" size={24} color="#555" />
                 <Text style={styles.text}>Notes: {shift.notes}</Text>
               </View>
+              <View style={styles.infoRow}>
+                <MaterialCommunityIcons name="fuel" size={24} color="#555" /> 
+                <Text style={styles.text}>Fuel Consumption: {shift.fuel}</Text>
+              </View>
               {shift.entries.length > 0 && (
                 <View>
                   <Text style={styles.sectionTitle}>Entries</Text>
-                  {shift.entries.map((entry, index) => (
-                    <View key={index} style={styles.entryRow}>
+                  {shift.entries.map((entry, entryIndex) => (
+                    <View key={entryIndex} style={styles.entryRow}>
                       <Text style={styles.entryText}>Company: {entry.companyName}</Text>
                       <Text style={styles.entryText}>Hours: {entry.hours}</Text>
                       <Text style={styles.entryText}>Ticket #: {entry.ticketNumber}</Text>

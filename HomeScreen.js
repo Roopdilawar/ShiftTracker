@@ -3,7 +3,7 @@ import { View, Text, Alert, ActivityIndicator, StyleSheet, TouchableOpacity, Ima
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { auth, firestore } from './firebase';
-import { addDoc, collection, serverTimestamp, query, where, orderBy, limit, getDocs, getDoc, doc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, where, orderBy, limit, getDocs, getDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { MaterialIcons } from '@expo/vector-icons'; // Import icons
 
@@ -218,7 +218,7 @@ const HomeScreen = ({ navigation }) => {
     setLoading(false);
   };
 
-  const handleClockOut = async (note, entries) => {
+  const handleClockOut = async (note, fuel, entries) => {
     setLoading(true);
     const user = auth.currentUser;
     if (user && location) {
@@ -233,6 +233,7 @@ const HomeScreen = ({ navigation }) => {
             },
             timestamp: serverTimestamp(),
             note: note || '',
+            fuel: fuel || 0,
             entries: entries || [], // Add entries to the document
           });
           setStatus('clockedOut');

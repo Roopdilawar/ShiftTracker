@@ -13,6 +13,8 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase storage functions
+import { firestore } from './firebase'; // Ensure you have the correct path for your firebase setup
+import { doc, deleteDoc } from 'firebase/firestore'; // Import deleteDoc
 import uuid from 'react-native-uuid';
 
 const ClockOutConfirmation = ({ route, navigation }) => {
@@ -22,6 +24,7 @@ const ClockOutConfirmation = ({ route, navigation }) => {
   const [shiftDuration, setShiftDuration] = useState(null);
 
   const [entries, setEntries] = useState([]);
+  const [fuelUsage, setFuelUsage] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [ticketNumber, setTicketNumber] = useState('');
   const [hours, setHours] = useState('');
@@ -55,6 +58,27 @@ const ClockOutConfirmation = ({ route, navigation }) => {
     }
   };
 
+  const takePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert('Permission to access camera is required!');
+      return;
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const resizedImage = await resizeImage(result.assets[0].uri);
+      setImage(resizedImage.uri);
+      console.log('Photo taken and resized:', resizedImage.uri);
+    }
+  };
+
   const resizeImage = async (uri) => {
     // Resize the image to a max width of 800 pixels and maintain aspect ratio
     const manipResult = await ImageManipulator.manipulateAsync(
@@ -74,10 +98,9 @@ const ClockOutConfirmation = ({ route, navigation }) => {
       const response = await fetch(uri);
       const blob = await response.blob();
 
-      console.log('uri:', uri)
-      console.log('blob:', blob)
-      console.log('imageRef:', imageRef)
-
+      console.log('uri:', uri);
+      console.log('blob:', blob);
+      console.log('imageRef:', imageRef);
 
       await uploadBytes(imageRef, blob);
       const downloadUrl = await getDownloadURL(imageRef);
@@ -88,40 +111,50 @@ const ClockOutConfirmation = ({ route, navigation }) => {
     }
   };
 
-
   const confirmClockOut = async () => {
-      console.log('Confirming clock out...');
-      try {
-          const updatedEntries = await Promise.all(
-              entries.map(async (entry) => {
-                  console.log('Processing entry:', entry);
-                  return {
-                      ...entry,
-                      image: entry.image ? await uploadImage(entry.image) : null,
-                  };
-              })
-          );
+    console.log('Confirming clock out...');
+    try {
+      const updatedEntries = await Promise.all(
+        entries.map(async (entry) => {
+          console.log('Processing entry:', entry);
+          return {
+            ...entry,
+            image: entry.image ? await uploadImage(entry.image) : null,
+          };
+        })
+      );
 
-          console.log('Clock out confirmed with entries:', updatedEntries);
-          handleClockOut(note, updatedEntries); // Pass entries with images to handleClockOut
-          resetState(); // Reset all relevant states after clock out
-          navigation.goBack();
-      } catch (error) {
-          console.error('Error during clock out:', error);
-          Alert.alert('Error', 'Failed to clock out properly.');
-      }
+      console.log('Clock out confirmed with entries:', updatedEntries);
+      handleClockOut(note, fuelUsage, updatedEntries); // Pass entries with images to handleClockOut
+      resetState(); // Reset all relevant states after clock out
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error during clock out:', error);
+      Alert.alert('Error', 'Failed to clock out properly.');
+    }
   };
 
   const resetState = () => {
-      setEntries([]);
-      setCompanyName('');
-      setTicketNumber('');
-      setHours('');
-      setImage(null);
-      setNote('');
-      // You may also want to reset `clockOutTime` and `shiftDuration` if they should not persist
-      setClockOutTime(null);
-      setShiftDuration(null);
+    setEntries([]);
+    setFuelUsage('');
+    setCompanyName('');
+    setTicketNumber('');
+    setHours('');
+    setImage(null);
+    setNote('');
+    // You may also want to reset `clockOutTime` and `shiftDuration` if they should not persist
+    setClockOutTime(null);
+    setShiftDuration(null);
+  };
+
+  const deleteLocationFromFirestore = async (userId) => {
+    try {
+      const locationDocRef = await doc(firestore, 'liveLocations', userId);
+      await deleteDoc(locationDocRef);
+      console.log('Location deleted successfully from Firestore');
+    } catch (error) {
+      console.error('Error deleting location from Firestore:', error);
+    }
   };
 
   const addEntry = async () => {
@@ -161,6 +194,17 @@ const ClockOutConfirmation = ({ route, navigation }) => {
         {/* Input Form Section */}
         <View style={styles.inputSection}>
           <TextInput
+            placeholder="Fuel Usage (Liters)"
+            value={fuelUsage}
+            onChangeText={setFuelUsage}
+            style={styles.input}
+            placeholderTextColor="#aaa"
+            keyboardType="numeric"
+          />
+
+          <Text style={styles.sectionTitle}>Ticket Entries</Text>
+
+          <TextInput
             placeholder="Company Name"
             value={companyName}
             onChangeText={setCompanyName}
@@ -183,9 +227,14 @@ const ClockOutConfirmation = ({ route, navigation }) => {
             placeholderTextColor="#aaa"
             keyboardType="numeric"
           />
-          <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-            <Text style={styles.buttonText}>Pick Image</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+              <Text style={styles.buttonText}>Pick Image</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.imageButton} onPress={takePhoto}>
+              <Text style={styles.buttonText}>Take Photo</Text>
+            </TouchableOpacity>
+          </View>
           {image && <Image source={{ uri: image }} style={styles.thumbnail} />}
           <TouchableOpacity style={styles.addButton} onPress={addEntry}>
             <Text style={styles.buttonText}>Add Entry</Text>
@@ -204,7 +253,7 @@ const ClockOutConfirmation = ({ route, navigation }) => {
 
         <View style={styles.bottomContent}>
           <TextInput
-            placeholder="Add a note (optional)"
+            placeholder="Add a note (optional)                                 "
             value={note}
             onChangeText={setNote}
             style={styles.input}
@@ -268,7 +317,7 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: -30, // Less space between Shift Duration and Fuel Usage
   },
   summaryText: {
     fontSize: 18,
@@ -286,16 +335,31 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 20, // More space after Fuel Usage
     backgroundColor: '#fff',
   },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 30,
+    marginBottom: 10,
+    color: '#333',
+    alignSelf: 'flex-start',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 10,
+  },
   imageButton: {
+    flex: 1,
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 10,
     backgroundColor: '#0288D1',
     alignItems: 'center',
-    marginBottom: 10,
+    marginHorizontal: 5,
   },
   thumbnail: {
     width: 100,
