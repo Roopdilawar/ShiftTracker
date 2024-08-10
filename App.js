@@ -10,6 +10,7 @@ import ClockOutConfirmation from './ClockOutConfirmation';
 import DriverList from './DriverList';
 import DriverCalendar from './DriverCalendar';
 import DateSummary from './DateSummary';
+import MapViewComponent from './MapViewComponent'; // Import your MapViewComponent
 
 const Stack = createStackNavigator();
 
@@ -45,6 +46,11 @@ const App = () => {
         <Stack.Screen
           name="DriverList"
           component={DriverList}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="MapViewComponent" 
+          component={MapViewComponent} 
           options={{ headerShown: false }}
         />
         <Stack.Screen

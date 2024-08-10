@@ -1,14 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, ActivityIndicator, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
 import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 import { auth, firestore } from './firebase';
-import { addDoc, collection, serverTimestamp, query, where, orderBy, limit, getDocs, getDoc, doc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, where, orderBy, limit, getDocs, getDoc, doc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { MaterialIcons } from '@expo/vector-icons'; // Import icons
 
 // Edmonton's coordinates and radius in km
 const EDMONTON_CENTER = { latitude: 53.5461, longitude: -113.4938 };
 const RADIUS = 20;
+
+// Define the background task
+const LOCATION_TASK_NAME = 'background-location-task';
+
+// Function to send location to Firebase
+const sendLocationToFirebase = async (latitude, longitude) => {
+  const user = auth.currentUser;
+  if (!user) {
+    console.log('No authenticated user');
+    return;
+  }
+
+  try {
+    const locationDocRef = doc(firestore, 'liveLocations', user.uid);
+    await setDoc(locationDocRef, { latitude, longitude, timestamp: new Date() }, { merge: true });
+    console.log('Location updated:', latitude, longitude);
+  } catch (error) {
+    console.error('Error sending location to Firebase:', error);
+  }
+};
+
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+  console.log('here')
+  if (error) {
+    console.error('Task Manager Error:', error);
+    return;
+  }
+  if (data) {
+    const { locations } = data;
+    console.log('Received new locations:', locations);
+    locations.forEach((location) => {
+      const { latitude, longitude } = location.coords;
+      sendLocationToFirebase(latitude, longitude);
+    });
+  }
+});
 
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
@@ -57,7 +94,8 @@ const HomeScreen = ({ navigation }) => {
       { latitude: location.coords.latitude, longitude: location.coords.longitude },
       EDMONTON_CENTER
     );
-    return distance <= RADIUS;
+    // return distance <= RADIUS;
+    return true;
   };
 
   const checkClockStatus = async () => {
@@ -81,8 +119,10 @@ const HomeScreen = ({ navigation }) => {
             setStatus('clockedIn');
             setClockInTime(lastEntry.timestamp.toDate());
             console.log('User is clocked in');
+            startSharingLocation(); // Ensure location sharing is active if clocked in
           } else {
             setStatus('clockedOut');
+            stopSharingLocation(); // Stop sharing location if clocked out
             console.log('User is clocked out');
           }
         } else {
@@ -97,6 +137,55 @@ const HomeScreen = ({ navigation }) => {
       console.log('No authenticated user, setting status to clocked out');
     }
   };
+
+  const startSharingLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission to access location was denied');
+      return;
+    }
+
+    const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
+    if (backgroundStatus.status !== 'granted') {
+      Alert.alert('Permission to access location in the background was denied');
+      return;
+    }
+
+    const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+    console.log(hasStarted)
+    if (!hasStarted) {
+      console.log('Starting location updates...');
+      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 10000, // 10 seconds
+        distanceInterval: 10, // 10 meters
+        showsBackgroundLocationIndicator: true, // Show the location indicator on iOS
+        foregroundService: {
+          notificationTitle: 'ShiftTracker Location Service',
+          notificationBody: 'We are using your location to show your current position.',
+        },
+      });
+    } else {
+      console.log('Location updates already started');
+    }
+  };
+
+  const stopSharingLocation = async () => {
+    console.log('Stopping location updates...');
+    await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const locationDocRef = doc(firestore, 'liveLocations', user.uid);
+        await deleteDoc(locationDocRef);
+        console.log('Location entry deleted from Firestore');
+      } catch (error) {
+        console.error('Error deleting location from Firestore:', error);
+      }
+    }
+  };
+
 
   const handleClockIn = async (note) => {
     setLoading(true);
@@ -117,6 +206,7 @@ const HomeScreen = ({ navigation }) => {
           const docSnapshot = await getDoc(doc(firestore, 'clockins', docRef.id));
           setStatus('clockedIn');
           setClockInTime(docSnapshot.data().timestamp.toDate());
+          startSharingLocation(); // Start sharing location on clock in
         } catch (error) {
           Alert.alert('Error', 'Failed to clock in');
           console.error('Clock in error:', error);
@@ -146,6 +236,7 @@ const HomeScreen = ({ navigation }) => {
             entries: entries || [], // Add entries to the document
           });
           setStatus('clockedOut');
+          stopSharingLocation(); // Stop sharing location on clock out
         } catch (error) {
           Alert.alert('Error', 'Failed to clock out');
           console.error('Clock out error:', error);
@@ -195,7 +286,7 @@ const HomeScreen = ({ navigation }) => {
               <>
                 <MaterialIcons name="access-time" size={48} color="green" />
                 <Text style={styles.statusText}>Clocked In</Text>
-                <Text style={styles.hoursText}>{calculateHoursSinceClockIn()} hours since clocked in</Text>
+                <Text style={styles.hoursText}>{calculateHoursSinceClockIn()} hours since clocking in</Text>
               </>
             ) : (
               <>

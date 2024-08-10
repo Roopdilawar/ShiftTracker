@@ -12,21 +12,20 @@ import {
   Modal,
 } from 'react-native';
 import * as Sharing from 'expo-sharing';
-import { Picker } from '@react-native-picker/picker'; // Import Picker from the new package
+import { Picker } from '@react-native-picker/picker';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { firestore, auth } from './firebase'; // Importing firestore and auth correctly
+import { firestore, auth } from './firebase';
 import { signOut } from 'firebase/auth';
-import { MaterialIcons } from '@expo/vector-icons'; // Importing icons
+import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
-import * as XLSX from 'xlsx'; // Import xlsx for generating Excel files
+import * as XLSX from 'xlsx';
 
 const DriverList = ({ navigation }) => {
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // Default to current month
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
-  // Array of month names
   const monthNames = [
     'January',
     'February',
@@ -75,8 +74,6 @@ const DriverList = ({ navigation }) => {
   const generateReport = async () => {
     try {
       setLoading(true);
-
-      // Query clockins collection for each driver and calculate total hours
       const reportData = [];
       for (const driver of drivers) {
         const clockinsQuery = query(
@@ -97,12 +94,11 @@ const DriverList = ({ navigation }) => {
           const timestamp = data.timestamp.toDate();
 
           if (data.type === 'clockin') {
-            lastClockIn = timestamp; // Record the last clock in time
+            lastClockIn = timestamp;
           } else if (data.type === 'clockout' && lastClockIn) {
-            // If there's a clockout and a previous clockin, calculate the hours worked
-            const hours = (timestamp - lastClockIn) / (1000 * 60 * 60); // Calculate hours
+            const hours = (timestamp - lastClockIn) / (1000 * 60 * 60);
             totalHours += hours;
-            lastClockIn = null; // Reset clockin for next calculation
+            lastClockIn = null;
           }
         });
 
@@ -114,20 +110,12 @@ const DriverList = ({ navigation }) => {
 
       console.log(reportData);
 
-      // Create Excel file using xlsx
       const ws = XLSX.utils.json_to_sheet(reportData);
-
-      // Create a new workbook
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Report');
-
-      // Write workbook to base64
       const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
 
-      // Save to file system
-      const fileUri =
-        FileSystem.documentDirectory +
-        `ShiftTracker_Report_${monthNames[selectedMonth]}.xlsx`;
+      const fileUri = FileSystem.documentDirectory + `ShiftTracker_Report_${monthNames[selectedMonth]}.xlsx`;
       await FileSystem.writeAsStringAsync(fileUri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -202,6 +190,12 @@ const DriverList = ({ navigation }) => {
         onPress={() => setModalVisible(true)}
       >
         <Text style={styles.buttonText}>Generate Monthly Report</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.mapButton}
+        onPress={() => navigation.navigate('MapViewComponent')}
+      >
+        <Text style={styles.buttonText}>View Driver Locations</Text>
       </TouchableOpacity>
 
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
@@ -295,6 +289,14 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     margin: 20,
+    alignItems: 'center',
+  },
+  mapButton: {
+    backgroundColor: '#28A745',
+    padding: 15,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginBottom: 20,
     alignItems: 'center',
   },
   buttonText: {
