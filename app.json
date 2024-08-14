@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "ShiftTracker",
+    "name": "LS\u00A0ShiftTracker",
     "slug": "ShiftTracker",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/ls_logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/scorpion_logo.png",
+      "image": "./assets/ls_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

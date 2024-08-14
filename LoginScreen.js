@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, ImageBackground, TouchableOpacity, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Alert,
+  StyleSheet,
+  ImageBackground,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 
@@ -9,26 +19,50 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const checkStoredCredentials = async () => {
+      try {
+        const storedEmail = await AsyncStorage.getItem('email');
+        const storedPassword = await AsyncStorage.getItem('password');
+
+        if (storedEmail && storedPassword) {
+          setEmail(storedEmail);
+          setPassword(storedPassword);
+          handleLogin(storedEmail, storedPassword);
+        }
+      } catch (error) {
+        console.error('Failed to load stored credentials:', error);
+      }
+    };
+
+    checkStoredCredentials();
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Check if the email matches the specific admin email
         if (user.email === 'swastik@lscarriers.ca') {
-          navigation.replace('DriverList'); // Corrected typo here
+          navigation.replace('DriverList');
         } else {
           navigation.replace('Home');
         }
       }
     });
 
-    return unsubscribe; // Clean up the subscription on unmount
+    return unsubscribe;
   }, [navigation]);
 
-  const handleLogin = async () => {
+  const handleLogin = async (emailInput, passwordInput) => {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // After login, check if the email matches the specific admin email
-      if (userCredential.user.email === 'swastik@lscarriers.ca') { // Fixed the reference here
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        emailInput || email,
+        passwordInput || password
+      );
+
+      // Save credentials to AsyncStorage
+      await AsyncStorage.setItem('email', emailInput || email);
+      await AsyncStorage.setItem('password', passwordInput || password);
+
+      if (userCredential.user.email === 'swastik@lscarriers.ca') {
         navigation.replace('DriverList');
       } else {
         navigation.replace('Home');
@@ -43,7 +77,7 @@ const LoginScreen = ({ navigation }) => {
   return (
     <ImageBackground source={{ uri: 'https://source.unsplash.com/random' }} style={styles.background}>
       <View style={styles.container}>
-        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
+        <Image source={require('./assets/ls_logo.png')} style={styles.logo} />
         <Text style={styles.appName}>ShiftTracker</Text>
         <TextInput
           placeholder="Email"
@@ -60,7 +94,7 @@ const LoginScreen = ({ navigation }) => {
           style={styles.input}
           placeholderTextColor="#aaa"
         />
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+        <TouchableOpacity style={styles.button} onPress={() => handleLogin()} disabled={loading}>
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.signUpButton} onPress={() => navigation.navigate('SignUp')}>

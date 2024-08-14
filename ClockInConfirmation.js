@@ -19,7 +19,7 @@ const ClockInConfirmation = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
+        <Image source={require('./assets/ls_logo.png')} style={styles.logo} />
         <Text style={styles.appName}>ShiftTracker</Text>
       </View>
       <View style={styles.content}>

@@ -101,7 +101,7 @@ const DateSummary = ({ route, navigation }) => {
           <MaterialIcons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.appName}>ShiftTracker</Text>
-        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
+        <Image source={require('./assets/ls_logo.png')} style={styles.logo} />
       </View>
       <ScrollView style={styles.content}>
         <Text style={styles.dateText}>{new Date(date).toLocaleDateString()}</Text>

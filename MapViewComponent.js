@@ -72,7 +72,7 @@ const MapViewComponent = ({ navigation }) => {
           <MaterialIcons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.appName}>ShiftTracker</Text>
-        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
+        <Image source={require('./assets/ls_logo.png')} style={styles.logo} />
       </View>
       <MapView style={styles.map} initialRegion={{
           latitude: 53.5461, 
