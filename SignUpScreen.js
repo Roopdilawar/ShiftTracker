@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, ImageBackground, Alert } from 'react-native';
 import { auth, firestore } from './firebase'; // Adjust this import to match the export
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; // Make sure this is correctly imported
@@ -8,9 +8,21 @@ const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [companyCode, setCompanyCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = () => {
+    if (companyCode !== 'lscarriers') {
+      Alert.alert('Invalid Company Code', 'The company code you entered is incorrect.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'The passwords do not match.');
+      return;
+    }
+
     setLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
       .then(userCredential => {
@@ -26,16 +38,46 @@ const SignUpScreen = ({ navigation }) => {
               navigation.navigate('Home');
             }).catch((error) => {
               console.error('Failed to create user document:', error);
+              Alert.alert('Error', 'Failed to create user document in Firestore.');
             });
           })
           .catch(error => {
             console.error('Profile update error:', error);
+            Alert.alert('Profile Update Error', 'Failed to update user profile.');
           });
       })
       .catch(error => {
         console.error('Sign up error:', error);
+        handleAuthError(error);
       })
       .finally(() => setLoading(false));
+  };
+
+  const handleAuthError = (error) => {
+    let errorMessage = 'An error occurred during sign up. Please try again.';
+
+    switch (error.code) {
+      case 'auth/email-already-in-use':
+        errorMessage = 'The email address is already in use by another account.';
+        break;
+      case 'auth/invalid-email':
+        errorMessage = 'The email address is not valid.';
+        break;
+      case 'auth/operation-not-allowed':
+        errorMessage = 'Operation not allowed. Please contact support.';
+        break;
+      case 'auth/weak-password':
+        errorMessage = 'The password is too weak. Please enter a stronger password.';
+        break;
+      case 'auth/network-request-failed':
+        errorMessage = 'Network error. Please check your connection and try again.';
+        break;
+      default:
+        errorMessage = error.message;
+        break;
+    }
+
+    Alert.alert('Sign Up Error', errorMessage);
   };
 
   return (
@@ -61,6 +103,21 @@ const SignUpScreen = ({ navigation }) => {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          style={styles.input}
+          placeholderTextColor="#aaa"
+        />
+        <TextInput
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          style={styles.input}
+          placeholderTextColor="#aaa"
+        />
+        <TextInput
+          placeholder="Company Code"
+          value={companyCode}
+          onChangeText={setCompanyCode}
           style={styles.input}
           placeholderTextColor="#aaa"
         />
