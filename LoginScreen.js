@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 
@@ -19,25 +18,9 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const checkStoredCredentials = async () => {
-      try {
-        const storedEmail = await AsyncStorage.getItem('email');
-        const storedPassword = await AsyncStorage.getItem('password');
-
-        if (storedEmail && storedPassword) {
-          setEmail(storedEmail);
-          setPassword(storedPassword);
-          handleLogin(storedEmail, storedPassword);
-        }
-      } catch (error) {
-        console.error('Failed to load stored credentials:', error);
-      }
-    };
-
-    checkStoredCredentials();
-
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        // If the user is already authenticated, navigate to the appropriate screen
         if (user.email === 'swastik@lscarriers.ca') {
           navigation.replace('DriverList');
         } else {
@@ -46,21 +29,13 @@ const LoginScreen = ({ navigation }) => {
       }
     });
 
-    return unsubscribe;
+    return unsubscribe; // Cleanup subscription on component unmount
   }, [navigation]);
 
-  const handleLogin = async (emailInput, passwordInput) => {
+  const handleLogin = async () => {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        emailInput || email,
-        passwordInput || password
-      );
-
-      // Save credentials to AsyncStorage
-      await AsyncStorage.setItem('email', emailInput || email);
-      await AsyncStorage.setItem('password', passwordInput || password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
       if (userCredential.user.email === 'swastik@lscarriers.ca') {
         navigation.replace('DriverList');
@@ -68,7 +43,7 @@ const LoginScreen = ({ navigation }) => {
         navigation.replace('Home');
       }
     } catch (error) {
-      Alert.alert('Login Error', 'Incorrect Email or Password ');
+      Alert.alert('Login Error', 'Incorrect Email or Password');
     } finally {
       setLoading(false);
     }
@@ -94,7 +69,7 @@ const LoginScreen = ({ navigation }) => {
           style={styles.input}
           placeholderTextColor="#aaa"
         />
-        <TouchableOpacity style={styles.button} onPress={() => handleLogin()} disabled={loading}>
+        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.signUpButton} onPress={() => navigation.navigate('SignUp')}>
