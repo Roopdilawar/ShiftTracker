@@ -9,12 +9,14 @@ import {
   SafeAreaView,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase storage functions
-import { firestore } from './firebase'; // Ensure you have the correct path for your firebase setup
-import { doc, deleteDoc } from 'firebase/firestore'; // Import deleteDoc
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'; 
+import { firestore } from './firebase'; 
+import { doc, deleteDoc } from 'firebase/firestore'; 
 import uuid from 'react-native-uuid';
 
 const ClockOutConfirmation = ({ route, navigation }) => {
@@ -34,7 +36,7 @@ const ClockOutConfirmation = ({ route, navigation }) => {
     const currentTime = new Date();
     setClockOutTime(currentTime);
     const diff = currentTime - new Date(clockInTime);
-    setShiftDuration((diff / (1000 * 60 * 60)).toFixed(2)); // Hours with 2 decimal places
+    setShiftDuration((diff / (1000 * 60 * 60)).toFixed(2)); 
   }, [clockInTime]);
 
   const pickImage = async () => {
@@ -80,7 +82,6 @@ const ClockOutConfirmation = ({ route, navigation }) => {
   };
 
   const resizeImage = async (uri) => {
-    // Resize the image to a max width of 800 pixels and maintain aspect ratio
     const manipResult = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: 800 } }],
@@ -125,8 +126,8 @@ const ClockOutConfirmation = ({ route, navigation }) => {
       );
 
       console.log('Clock out confirmed with entries:', updatedEntries);
-      handleClockOut(note, fuelUsage, updatedEntries); // Pass entries with images to handleClockOut
-      resetState(); // Reset all relevant states after clock out
+      handleClockOut(note, fuelUsage, updatedEntries); 
+      resetState(); 
       navigation.goBack();
     } catch (error) {
       console.error('Error during clock out:', error);
@@ -142,7 +143,6 @@ const ClockOutConfirmation = ({ route, navigation }) => {
     setHours('');
     setImage(null);
     setNote('');
-    // You may also want to reset `clockOutTime` and `shiftDuration` if they should not persist
     setClockOutTime(null);
     setShiftDuration(null);
   };
@@ -163,113 +163,118 @@ const ClockOutConfirmation = ({ route, navigation }) => {
       setCompanyName('');
       setTicketNumber('');
       setHours('');
-      setImage(null); // Reset the image selection
+      setImage(null); 
     } else {
       Alert.alert('Please fill in all fields');
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
-        <Text style={styles.appName}>ShiftTracker</Text>
-      </View>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.topContent}>
-          <Text style={styles.title}>Confirm Clock Out</Text>
-          {clockInTime && (
-            <View style={styles.summaryContainer}>
-              <Text style={styles.summaryText}>
-                Clock In Time: {new Date(clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-              <Text style={styles.summaryText}>
-                Clock Out Time: {clockOutTime && clockOutTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-              <Text style={styles.summaryText}>Shift Duration: {shiftDuration} hours</Text>
-            </View>
-          )}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Image source={require('./assets/scorpion_logo.png')} style={styles.logo} />
+          <Text style={styles.appName}>ShiftTracker</Text>
         </View>
-
-        {/* Input Form Section */}
-        <View style={styles.inputSection}>
-          <TextInput
-            placeholder="Fuel Usage (Liters)"
-            value={fuelUsage}
-            onChangeText={setFuelUsage}
-            style={styles.input}
-            placeholderTextColor="#aaa"
-            keyboardType="numeric"
-          />
-
-          <Text style={styles.sectionTitle}>Ticket Entries</Text>
-
-          <TextInput
-            placeholder="Company Name"
-            value={companyName}
-            onChangeText={setCompanyName}
-            style={styles.input}
-            placeholderTextColor="#aaa"
-          />
-          <TextInput
-            placeholder="Ticket Number"
-            value={ticketNumber}
-            onChangeText={setTicketNumber}
-            style={styles.input}
-            placeholderTextColor="#aaa"
-            keyboardType="numeric"
-          />
-          <TextInput
-            placeholder="Hours"
-            value={hours}
-            onChangeText={setHours}
-            style={styles.input}
-            placeholderTextColor="#aaa"
-            keyboardType="numeric"
-          />
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-              <Text style={styles.buttonText}>Pick Image</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.imageButton} onPress={takePhoto}>
-              <Text style={styles.buttonText}>Take Photo</Text>
-            </TouchableOpacity>
-          </View>
-          {image && <Image source={{ uri: image }} style={styles.thumbnail} />}
-          <TouchableOpacity style={styles.addButton} onPress={addEntry}>
-            <Text style={styles.buttonText}>Add Entry</Text>
-          </TouchableOpacity>
-          <View style={styles.entriesContainer}>
-            {entries.map((entry, index) => (
-              <View key={index} style={styles.entry}>
-                <Text style={styles.entryText}>Company: {entry.companyName}</Text>
-                <Text style={styles.entryText}>Ticket #: {entry.ticketNumber}</Text>
-                <Text style={styles.entryText}>Hours: {entry.hours}</Text>
-                {entry.image && <Image source={{ uri: entry.image }} style={styles.thumbnail} />}
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
+          <View style={styles.topContent}>
+            <Text style={styles.title}>Confirm Clock Out</Text>
+            {clockInTime && (
+              <View style={styles.summaryContainer}>
+                <Text style={styles.summaryText}>
+                  Clock In Time: {new Date(clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Clock Out Time: {clockOutTime && clockOutTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+                <Text style={styles.summaryText}>Shift Duration: {shiftDuration} hours</Text>
               </View>
-            ))}
+            )}
           </View>
-        </View>
 
-        <View style={styles.bottomContent}>
-          <TextInput
-            placeholder="Add a note (optional)                                 "
-            value={note}
-            onChangeText={setNote}
-            style={styles.input}
-            placeholderTextColor="#aaa"
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={confirmClockOut}>
-              <Text style={styles.buttonText}>Clock Out</Text>
+          <View style={styles.inputSection}>
+            <TextInput
+              placeholder="Fuel Usage (Liters)"
+              value={fuelUsage}
+              onChangeText={setFuelUsage}
+              style={styles.input}
+              placeholderTextColor="#aaa"
+              keyboardType="numeric"
+            />
+
+            <Text style={styles.sectionTitle}>Ticket Entries</Text>
+
+            <TextInput
+              placeholder="Company Name"
+              value={companyName}
+              onChangeText={setCompanyName}
+              style={styles.input}
+              placeholderTextColor="#aaa"
+            />
+            <TextInput
+              placeholder="Ticket Number"
+              value={ticketNumber}
+              onChangeText={setTicketNumber}
+              style={styles.input}
+              placeholderTextColor="#aaa"
+              keyboardType="numeric"
+            />
+            <TextInput
+              placeholder="Hours"
+              value={hours}
+              onChangeText={setHours}
+              style={styles.input}
+              placeholderTextColor="#aaa"
+              keyboardType="numeric"
+            />
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+                <Text style={styles.buttonText}>Pick Image</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.imageButton} onPress={takePhoto}>
+                <Text style={styles.buttonText}>Take Photo</Text>
+              </TouchableOpacity>
+            </View>
+            {image && <Image source={{ uri: image }} style={styles.thumbnail} />}
+            <TouchableOpacity style={styles.addButton} onPress={addEntry}>
+              <Text style={styles.buttonText}>Add Entry</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => navigation.goBack()}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
+            <View style={styles.entriesContainer}>
+              {entries.map((entry, index) => (
+                <View key={index} style={styles.entry}>
+                  <Text style={styles.entryText}>Company: {entry.companyName}</Text>
+                  <Text style={styles.entryText}>Ticket #: {entry.ticketNumber}</Text>
+                  <Text style={styles.entryText}>Hours: {entry.hours}</Text>
+                  {entry.image && <Image source={{ uri: entry.image }} style={styles.thumbnail} />}
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+          <View style={styles.bottomContent}>
+            <TextInput
+              placeholder="Add a note (optional)"
+              value={note}
+              onChangeText={setNote}
+              style={styles.input}
+              placeholderTextColor="#aaa"
+              multiline
+            />
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={confirmClockOut}>
+                <Text style={styles.buttonText}>Clock Out</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => navigation.goBack()}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -317,7 +322,7 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     alignItems: 'center',
-    marginBottom: -30, // Less space between Shift Duration and Fuel Usage
+    marginBottom: -30,
   },
   summaryText: {
     fontSize: 18,
@@ -335,7 +340,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 10,
-    marginBottom: 20, // More space after Fuel Usage
+    marginBottom: 20,
     backgroundColor: '#fff',
   },
   sectionTitle: {

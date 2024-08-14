@@ -17,6 +17,7 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses your location to track your work shifts.",
         "NSLocationAlwaysUsageDescription": "This app needs to access your location to track your work shifts, even when the app is in the background.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to track your work shifts both in the background and foreground.",
         "UIBackgroundModes": ["location"]
       }
     },

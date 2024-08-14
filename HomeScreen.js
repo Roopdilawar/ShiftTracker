@@ -158,7 +158,7 @@ const HomeScreen = ({ navigation }) => {
       await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
         timeInterval: 10000, // 10 seconds
-        distanceInterval: 10, // 10 meters
+        distanceInterval: 50, // 10 meters
         showsBackgroundLocationIndicator: true, // Show the location indicator on iOS
         foregroundService: {
           notificationTitle: 'ShiftTracker Location Service',

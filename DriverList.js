@@ -25,6 +25,7 @@ const DriverList = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const monthNames = [
     'January',
@@ -75,12 +76,16 @@ const DriverList = ({ navigation }) => {
     try {
       setLoading(true);
       const reportData = [];
+      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
       for (const driver of drivers) {
+        const dailyData = Array(daysInMonth).fill({ hours: 0, fuel: 0 });
+
         const clockinsQuery = query(
           collection(firestore, 'clockins'),
           where('userId', '==', driver.id),
-          where('timestamp', '>=', new Date(new Date().getFullYear(), selectedMonth, 1)),
-          where('timestamp', '<', new Date(new Date().getFullYear(), selectedMonth + 1, 1)),
+          where('timestamp', '>=', new Date(selectedYear, selectedMonth, 1)),
+          where('timestamp', '<', new Date(selectedYear, selectedMonth + 1, 1)),
           orderBy('timestamp')
         );
 
@@ -93,26 +98,35 @@ const DriverList = ({ navigation }) => {
         clockinsSnapshot.forEach((doc) => {
           const data = doc.data();
           const timestamp = data.timestamp.toDate();
+          const day = timestamp.getDate() - 1;
 
           if (data.type === 'clockin') {
             lastClockIn = timestamp;
           } else if (data.type === 'clockout' && lastClockIn) {
             const hours = (timestamp - lastClockIn) / (1000 * 60 * 60);
             totalHours += hours;
+            dailyData[day].hours += hours;
             lastClockIn = null;
           }
 
-          // Sum fuel usage if available
           if (data.fuel) {
-            totalFuel += parseFloat(data.fuel);
+            const fuel = parseFloat(data.fuel);
+            totalFuel += fuel;
+            dailyData[day].fuel += fuel;
           }
         });
 
-        reportData.push({
-          Name: driver.name,
-          'Total Hours': totalHours.toFixed(2),
-          'Total Fuel (L)': totalFuel.toFixed(2), // Add fuel usage
+        const driverRow = { Name: driver.name };
+
+        dailyData.forEach((data, index) => {
+          driverRow[`Day ${index + 1} Hours`] = data.hours.toFixed(2);
+          driverRow[`Day ${index + 1} Fuel (L)`] = data.fuel.toFixed(2);
         });
+
+        driverRow['Total Hours'] = totalHours.toFixed(2);
+        driverRow['Total Fuel (L)'] = totalFuel.toFixed(2);
+
+        reportData.push(driverRow);
       }
 
       console.log(reportData);
@@ -122,7 +136,7 @@ const DriverList = ({ navigation }) => {
       XLSX.utils.book_append_sheet(wb, ws, 'Report');
       const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
 
-      const fileUri = FileSystem.documentDirectory + `ShiftTracker_Report_${monthNames[selectedMonth]}.xlsx`;
+      const fileUri = FileSystem.documentDirectory + `ShiftTracker_Report_${monthNames[selectedMonth]}_${selectedYear}.xlsx`;
       await FileSystem.writeAsStringAsync(fileUri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
