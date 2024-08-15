@@ -188,8 +188,12 @@ const HomeScreen = ({ navigation }) => {
 
 
   const handleClockIn = async (note) => {
-    setLoading(true);
+    setLoading(true); // Start loading
     const user = auth.currentUser;
+    if (!location) {
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+    }
     if (user && location) {
       if (isWithinEdmonton(location)) {
         try {
@@ -198,11 +202,12 @@ const HomeScreen = ({ navigation }) => {
             type: 'clockin',
             location: {
               latitude: location.coords.latitude,
-              longitude: location.coords.longitude
+              longitude: location.coords.longitude,
             },
             timestamp: serverTimestamp(),
-            note: note || ''
+            note: note || '',
           });
+          console.log('here');
           const docSnapshot = await getDoc(doc(firestore, 'clockins', docRef.id));
           setStatus('clockedIn');
           setClockInTime(docSnapshot.data().timestamp.toDate());
@@ -215,7 +220,7 @@ const HomeScreen = ({ navigation }) => {
         Alert.alert('Error', 'You must be within Edmonton to clock in');
       }
     }
-    setLoading(false);
+    setLoading(false); // Stop loading
   };
 
   const handleClockOut = async (note, fuel, entries) => {
@@ -276,49 +281,56 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Image source={require('./assets/ls_logo.png')} style={styles.logo} />
-          <Text style={styles.appName}>ShiftTracker</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text>Loading...</Text>
         </View>
-        <View style={styles.content}>
-          <View style={styles.statusContainer}>
-            {status === 'clockedIn' ? (
-              <>
-                <MaterialIcons name="access-time" size={48} color="green" />
-                <Text style={styles.statusText}>Clocked In</Text>
-                <Text style={styles.hoursText}>{calculateHoursSinceClockIn()} hours since clocking in</Text>
-              </>
-            ) : (
-              <>
-                <MaterialIcons name="access-time" size={48} color="red" />
-                <Text style={styles.statusText}>Not Clocked In</Text>
-              </>
-            )}
+      ) : (
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Image source={require('./assets/ls_logo.png')} style={styles.logo} />
+            <Text style={styles.appName}>ShiftTracker</Text>
           </View>
-          {status === 'clockedOut' && (
-            <TouchableOpacity
-              style={[styles.button, styles.clockInButton]}
-              onPress={() => navigation.navigate('ClockInConfirmation', { handleClockIn })}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>Clock In</Text>
+          <View style={styles.content}>
+            <View style={styles.statusContainer}>
+              {status === 'clockedIn' ? (
+                <>
+                  <MaterialIcons name="access-time" size={48} color="green" />
+                  <Text style={styles.statusText}>Clocked In</Text>
+                  <Text style={styles.hoursText}>{calculateHoursSinceClockIn()} hours since clocking in</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialIcons name="access-time" size={48} color="red" />
+                  <Text style={styles.statusText}>Not Clocked In</Text>
+                </>
+              )}
+            </View>
+            {status === 'clockedOut' && (
+              <TouchableOpacity
+                style={[styles.button, styles.clockInButton]}
+                onPress={() => navigation.navigate('ClockInConfirmation', { handleClockIn })}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>Clock In</Text>
+              </TouchableOpacity>
+            )}
+            {status === 'clockedIn' && (
+              <TouchableOpacity
+                style={[styles.button, styles.clockOutButton]}
+                onPress={() => navigation.navigate('ClockOutConfirmation', { handleClockOut, clockInTime })}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>Clock Out</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutButtonText}>Logout</Text>
             </TouchableOpacity>
-          )}
-          {status === 'clockedIn' && (
-            <TouchableOpacity
-              style={[styles.button, styles.clockOutButton]}
-              onPress={() => navigation.navigate('ClockOutConfirmation', { handleClockOut, clockInTime })}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>Clock Out</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
     </SafeAreaView>
   );
 };
