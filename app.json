@@ -2,7 +2,7 @@
   "expo": {
     "name": "LS\u00A0ShiftTracker",
     "slug": "ShiftTracker",
-    "version": "1.0.0",
+    "version": "1.1.2",
     "orientation": "portrait",
     "icon": "./assets/ls_logo.png",
     "userInterfaceStyle": "light",
@@ -12,14 +12,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,  // Disable iPad support
       "bundleIdentifier": "com.roopdilawar.ShiftTracker",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses your location to track your work shifts.",
         "NSLocationAlwaysUsageDescription": "This app needs to access your location to track your work shifts, even when the app is in the background.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to track your work shifts both in the background and foreground.",
         "UIBackgroundModes": ["location"]
-      }
+      },
+      "deploymentTarget": "17.5"
     },
     "android": {
       "adaptiveIcon": {
