@@ -15,10 +15,7 @@
       "supportsTablet": false,  // Disable iPad support
       "bundleIdentifier": "com.roopdilawar.ShiftTracker",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to track your work shifts.",
-        "NSLocationAlwaysUsageDescription": "This app needs to access your location to track your work shifts, even when the app is in the background.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to track your work shifts both in the background and foreground.",
-        "UIBackgroundModes": ["location"]
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to track your work shifts."
       },
       "deploymentTarget": "17.5"
     },

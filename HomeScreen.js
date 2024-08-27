@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, ActivityIndicator, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
 import * as Location from 'expo-location';
-import * as TaskManager from 'expo-task-manager';
 import { auth, firestore } from './firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, limit, getDocs, getDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -10,9 +9,6 @@ import { MaterialIcons } from '@expo/vector-icons'; // Import icons
 // Edmonton's coordinates and radius in km
 const EDMONTON_CENTER = { latitude: 53.5461, longitude: -113.4938 };
 const RADIUS = 20;
-
-// Define the background task
-const LOCATION_TASK_NAME = 'background-location-task';
 
 // Function to send location to Firebase
 const sendLocationToFirebase = async (latitude, longitude) => {
@@ -30,22 +26,6 @@ const sendLocationToFirebase = async (latitude, longitude) => {
     console.error('Error sending location to Firebase:', error);
   }
 };
-
-TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
-  console.log('here')
-  if (error) {
-    console.error('Task Manager Error:', error);
-    return;
-  }
-  if (data) {
-    const { locations } = data;
-    console.log('Received new locations:', locations);
-    locations.forEach((location) => {
-      const { latitude, longitude } = location.coords;
-      sendLocationToFirebase(latitude, longitude);
-    });
-  }
-});
 
 const HomeScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
@@ -95,7 +75,7 @@ const HomeScreen = ({ navigation }) => {
       EDMONTON_CENTER
     );
     // return distance <= RADIUS;
-    return true;
+    return true; // Change back to the distance check if necessary
   };
 
   const checkClockStatus = async () => {
@@ -145,35 +125,12 @@ const HomeScreen = ({ navigation }) => {
       return;
     }
 
-    const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-    if (backgroundStatus.status !== 'granted') {
-      Alert.alert('Permission to access location in the background was denied');
-      return;
-    }
-
-    const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
-    console.log(hasStarted)
-    if (!hasStarted) {
-      console.log('Starting location updates...');
-      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 10000, // 10 seconds
-        distanceInterval: 50, // 10 meters
-        showsBackgroundLocationIndicator: true, // Show the location indicator on iOS
-        foregroundService: {
-          notificationTitle: 'ShiftTracker Location Service',
-          notificationBody: 'We are using your location to show your current position.',
-        },
-      });
-    } else {
-      console.log('Location updates already started');
-    }
+    const location = await Location.getCurrentPositionAsync({});
+    sendLocationToFirebase(location.coords.latitude, location.coords.longitude);
   };
 
   const stopSharingLocation = async () => {
     console.log('Stopping location updates...');
-    await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-
     const user = auth.currentUser;
     if (user) {
       try {
@@ -185,7 +142,6 @@ const HomeScreen = ({ navigation }) => {
       }
     }
   };
-
 
   const handleClockIn = async (note) => {
     setLoading(true); // Start loading
@@ -234,7 +190,7 @@ const HomeScreen = ({ navigation }) => {
             type: 'clockout',
             location: {
               latitude: location.coords.latitude,
-              longitude: location.coords.longitude
+              longitude: location.coords.longitude,
             },
             timestamp: serverTimestamp(),
             note: note || '',

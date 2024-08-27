@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { firestore } from './firebase'; // Ensure this path matches your project structure
+import { collection, getDocs, query } from 'firebase/firestore';
+import { firestore } from './firebase';
 import { MaterialIcons } from '@expo/vector-icons';
 
 const MapViewComponent = ({ navigation }) => {
@@ -26,29 +26,11 @@ const MapViewComponent = ({ navigation }) => {
           return acc;
         }, {});
 
-        // Fetch the latest clock-in time for each driver
-        for (const location of locationData) {
-          const clockInQuery = query(
-            collection(firestore, 'clockins'),
-            where('userId', '==', location.id),
-            where('type', '==', 'clockin'),
-            orderBy('timestamp', 'desc'),
-            limit(1)
-          );
-
-          const clockInSnapshot = await getDocs(clockInQuery);
-          if (!clockInSnapshot.empty) {
-            const lastClockIn = clockInSnapshot.docs[0].data().timestamp.toDate();
-            location.lastClockInTime = lastClockIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          } else {
-            location.lastClockInTime = 'Unknown';
-          }
-        }
-
-        // Map locations to include user full name
+        // Map locations to include user full name and format last update time
         const mappedLocations = locationData.map((loc) => ({
           ...loc,
           fullName: usersData[loc.id] || 'Unknown',
+          lastUpdateTime: loc.timestamp ? new Date(loc.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Unknown',
         }));
 
         setLocations(mappedLocations);
@@ -74,18 +56,21 @@ const MapViewComponent = ({ navigation }) => {
         <Text style={styles.appName}>ShiftTracker</Text>
         <Image source={require('./assets/ls_logo.png')} style={styles.logo} />
       </View>
-      <MapView style={styles.map} initialRegion={{
-          latitude: 53.5461, 
-          longitude: -113.4938, 
-          latitudeDelta: 0.0922, 
-          longitudeDelta: 0.0421 
-      }}>
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude: 53.5461,
+          longitude: -113.4938,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+      >
         {locations.map((loc) => (
           <Marker
             key={loc.id}
             coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
             title={loc.fullName}
-            description={`Started at ${loc.lastClockInTime}`}
+            description={`Last update: ${loc.lastUpdateTime}`}
           >
             <View style={styles.marker}>
               <Text style={styles.markerText}>
