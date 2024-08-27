@@ -2,7 +2,7 @@
   "expo": {
     "name": "LS\u00A0ShiftTracker",
     "slug": "ShiftTracker",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/ls_logo.png",
     "userInterfaceStyle": "light",
