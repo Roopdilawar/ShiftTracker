@@ -7,8 +7,8 @@ import { signOut } from 'firebase/auth';
 import { MaterialIcons } from '@expo/vector-icons'; // Import icons
 
 // Edmonton's coordinates and radius in km
-const EDMONTON_CENTER = { latitude: 53.5461, longitude: -113.4938 };
-const RADIUS = 20;
+const EDMONTON_CENTER = { latitude: 53.510543, longitude: -113.398421 };
+const RADIUS = 1;
 
 // Function to send location to Firebase
 const sendLocationToFirebase = async (latitude, longitude) => {
@@ -74,8 +74,7 @@ const HomeScreen = ({ navigation }) => {
       { latitude: location.coords.latitude, longitude: location.coords.longitude },
       EDMONTON_CENTER
     );
-    // return distance <= RADIUS;
-    return true; // Change back to the distance check if necessary
+    return distance <= RADIUS;
   };
 
   const checkClockStatus = async () => {
@@ -173,7 +172,7 @@ const HomeScreen = ({ navigation }) => {
           console.error('Clock in error:', error);
         }
       } else {
-        Alert.alert('Error', 'You must be within Edmonton to clock in');
+        Alert.alert('Error', 'You must be within the Yard to clock in');
       }
     }
     setLoading(false); // Stop loading
@@ -204,7 +203,7 @@ const HomeScreen = ({ navigation }) => {
           console.error('Clock out error:', error);
         }
       } else {
-        Alert.alert('Error', 'You must be within Edmonton to clock out');
+        Alert.alert('Error', 'You must be within the Yard to clock out');
       }
     }
     setLoading(false);
