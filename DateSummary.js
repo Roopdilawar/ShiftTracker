@@ -11,8 +11,10 @@ import {
   Modal,
 } from 'react-native';
 import { firestore } from './firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'; // Import orderBy
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import moment from 'moment-timezone'; // Import moment-timezone
+import { Timestamp } from 'firebase/firestore';
 
 const DateSummary = ({ route, navigation }) => {
   const { driverId, date } = route.params;
@@ -20,19 +22,34 @@ const DateSummary = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  console.log(driverId, date)
-  console.log(new Date(new Date(date).setDate(new Date(date).getDate())))
-  console.log(new Date(new Date(date).setDate(new Date(date).getDate() + 1)))
+
+  // Utility function to create a date in Mountain Time with time set to 00:00
+  const createMountainTimeDate = (date) => {
+    return moment.tz(date, "America/Denver").startOf('day').toDate();
+  };
 
   useEffect(() => {
     const fetchShiftDetails = async () => {
       setLoading(true);
       try {
+        // Create Mountain Time dates for start and end of the day
+        const startOfDay = createMountainTimeDate(date);
+        const endOfDay = moment(startOfDay).add(1, 'day').toDate(); // End of the day (next day 00:00)
+
+        // Convert the start and end of the day to Firestore Timestamps
+        const startTimestamp = Timestamp.fromDate(startOfDay);
+        const endTimestamp = Timestamp.fromDate(endOfDay);
+
+        console.log("Start of day:", startTimestamp.toDate());
+        console.log("End of day:", endTimestamp.toDate());
+
+        // Firebase query with ordering by timestamp
         const q = query(
           collection(firestore, 'clockins'),
           where('userId', '==', driverId),
-          where('timestamp', '>=', new Date(new Date(date).setDate(new Date(date).getDate() + 0))),
-          where('timestamp', '<', new Date(new Date(date).setDate(new Date(date).getDate() + 2)))
+          where('timestamp', '>=', startTimestamp),
+          where('timestamp', '<', endTimestamp),
+          orderBy('timestamp', 'asc') // Order results by timestamp in ascending order
         );
 
         const querySnapshot = await getDocs(q);
@@ -42,11 +59,36 @@ const DateSummary = ({ route, navigation }) => {
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          console.log(data)
+          const docTimestamp = data.timestamp.toDate();
+          console.log('Document data:', data); // Logging all document data to debug
+
           if (data.type === 'clockin') {
-            clockin = data.timestamp.toDate();
+            // If there was a clockin from the previous shift, log a warning if not paired with a clockout
+            if (clockin !== null) {
+              console.warn(`Previous clockin at ${clockin} was not paired with a clockout.`);
+            }
+            clockin = docTimestamp;
+            console.log('Clockin timestamp:', clockin); // Log clockin
           } else if (data.type === 'clockout') {
-            const clockout = data.timestamp.toDate();
+            const clockout = docTimestamp;
+            console.log('Clockout timestamp:', clockout); // Log clockout
+
+            // Check if clockin exists before clockout
+            if (clockin === null) {
+              console.warn(`Clockout at ${clockout} has no matching clockin.`);
+              return;
+            }
+
+            // Error handling: skip if clockout is before clockin
+            if (clockout < clockin) {
+              console.warn(`Clockout before clockin detected: clockin = ${clockin}, clockout = ${clockout}. Skipping this entry.`);
+              // Reset clockin and skip this shift
+              clockin = null;
+              entriesList = [];
+              return;
+            }
+
+            // Calculate total hours and push the shift to the list
             const totalHours = ((clockout - clockin) / (1000 * 60 * 60)).toFixed(2);
             const notes = data.note || 'N/A';
             const fuel = data.fuel || 'N/A';

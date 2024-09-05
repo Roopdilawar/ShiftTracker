@@ -101,12 +101,23 @@ const DriverList = ({ navigation }) => {
           const day = timestamp.getDate() - 1;
 
           if (data.type === 'clockin') {
+            if (lastClockIn) {
+              console.warn(`Unpaired clockin for ${driver.name} on day ${day + 1}`);
+            }
             lastClockIn = timestamp;
-          } else if (data.type === 'clockout' && lastClockIn) {
-            const hours = (timestamp - lastClockIn) / (1000 * 60 * 60);
-            totalHours += hours;
-            dailyData[day].hours += hours;
-            lastClockIn = null;
+          } else if (data.type === 'clockout') {
+            if (lastClockIn) {
+              if (timestamp < lastClockIn) {
+                console.warn(`Clockout before clockin for ${driver.name} on day ${day + 1}`);
+              } else {
+                const hours = (timestamp - lastClockIn) / (1000 * 60 * 60); // Convert milliseconds to hours
+                totalHours += hours;
+                dailyData[day].hours += hours;
+                lastClockIn = null; // Reset clockin after successful clockout
+              }
+            } else {
+              console.warn(`Clockout without clockin for ${driver.name} on day ${day + 1}`);
+            }
           }
 
           if (data.fuel) {

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { firestore } from './firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { MaterialIcons } from '@expo/vector-icons'; // Importing icons
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const DriverCalendar = ({ route, navigation }) => {
   const { driverId, driverName } = route.params;
@@ -13,39 +13,58 @@ const DriverCalendar = ({ route, navigation }) => {
   useEffect(() => {
     const fetchWorkHours = async () => {
       try {
+        // Query to fetch clockins and clockouts, ordered by timestamp
         const q = query(
-          collection(firestore, 'clockins'), // Ensure 'clockins' is your collection name
-          where('userId', '==', driverId)
+          collection(firestore, 'clockins'),
+          where('userId', '==', driverId),
+          orderBy('timestamp', 'asc') // Order by timestamp to ensure correct order
         );
 
         const querySnapshot = await getDocs(q);
         const workEntries = [];
+        let clockin = null;
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           workEntries.push({
             type: data.type,
-            timestamp: data.timestamp.toDate().toLocaleDateString('en-CA'), // Convert Firestore timestamp to local date string (YYYY-MM-DD)
+            timestamp: data.timestamp.toDate(),
           });
         });
 
         // Calculate hours worked per day
         const hoursPerDay = {};
-
         workEntries.forEach((entry) => {
-          const dateString = entry.timestamp; // Already formatted as YYYY-MM-DD
+          const dateString = entry.timestamp.toLocaleDateString('en-CA'); // Format date as YYYY-MM-DD
 
           if (!hoursPerDay[dateString]) {
             hoursPerDay[dateString] = { clockin: null, clockout: null };
           }
 
           if (entry.type === 'clockin') {
-            hoursPerDay[dateString].clockin = new Date(entry.timestamp);
+            // If a clockin is already present for the day but not followed by a clockout, log a warning
+            if (hoursPerDay[dateString].clockin !== null) {
+              console.warn(`Unpaired clockin on ${dateString}`);
+            }
+            hoursPerDay[dateString].clockin = entry.timestamp;
           } else if (entry.type === 'clockout') {
-            hoursPerDay[dateString].clockout = new Date(entry.timestamp);
+            const clockout = entry.timestamp;
+
+            // If there's no clockin for this clockout, log a warning
+            if (hoursPerDay[dateString].clockin === null) {
+              console.warn(`Clockout without clockin on ${dateString}`);
+            } else {
+              // Only pair clockout if it's after clockin
+              if (clockout > hoursPerDay[dateString].clockin) {
+                hoursPerDay[dateString].clockout = clockout;
+              } else {
+                console.warn(`Clockout before clockin on ${dateString}`);
+              }
+            }
           }
         });
 
+        // Calculate total hours per day
         const calculatedHours = {};
 
         for (const date in hoursPerDay) {
@@ -86,7 +105,6 @@ const DriverCalendar = ({ route, navigation }) => {
           fontWeight: 'bold',
         },
       },
-      // Add a dot marker and the custom text for hours worked
       dots: [{ key: 'workHours', color: '#50cebb' }],
       customText: `${hoursWorked[date]}h`, // For showing hours worked
     };
