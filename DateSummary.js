@@ -20,6 +20,9 @@ const DateSummary = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  console.log(driverId, date)
+  console.log(new Date(new Date(date).setDate(new Date(date).getDate())))
+  console.log(new Date(new Date(date).setDate(new Date(date).getDate() + 1)))
 
   useEffect(() => {
     const fetchShiftDetails = async () => {
@@ -28,8 +31,8 @@ const DateSummary = ({ route, navigation }) => {
         const q = query(
           collection(firestore, 'clockins'),
           where('userId', '==', driverId),
-          where('timestamp', '>=', new Date(date)),
-          where('timestamp', '<', new Date(new Date(date).setDate(new Date(date).getDate() + 1)))
+          where('timestamp', '>=', new Date(new Date(date).setDate(new Date(date).getDate() + 0))),
+          where('timestamp', '<', new Date(new Date(date).setDate(new Date(date).getDate() + 2)))
         );
 
         const querySnapshot = await getDocs(q);
@@ -39,6 +42,7 @@ const DateSummary = ({ route, navigation }) => {
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
+          console.log(data)
           if (data.type === 'clockin') {
             clockin = data.timestamp.toDate();
           } else if (data.type === 'clockout') {
@@ -104,7 +108,7 @@ const DateSummary = ({ route, navigation }) => {
         <Image source={require('./assets/ls_logo.png')} style={styles.logo} />
       </View>
       <ScrollView style={styles.content}>
-        <Text style={styles.dateText}>{new Date(date).toLocaleDateString()}</Text>
+        <Text style={styles.dateText}>{new Date(new Date(date).setDate(new Date(date).getDate() + 1)).toLocaleDateString()}</Text>
         {shifts.length > 0 ? (
           shifts.map((shift, index) => (
             <View key={index} style={styles.card}>

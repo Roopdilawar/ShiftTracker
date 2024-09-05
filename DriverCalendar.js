@@ -25,7 +25,7 @@ const DriverCalendar = ({ route, navigation }) => {
           const data = doc.data();
           workEntries.push({
             type: data.type,
-            timestamp: data.timestamp.toDate(), // Convert Firestore timestamp to JS Date
+            timestamp: data.timestamp.toDate().toLocaleDateString('en-CA'), // Convert Firestore timestamp to local date string (YYYY-MM-DD)
           });
         });
 
@@ -33,16 +33,16 @@ const DriverCalendar = ({ route, navigation }) => {
         const hoursPerDay = {};
 
         workEntries.forEach((entry) => {
-          const dateString = entry.timestamp.toISOString().split('T')[0]; // Extract date string in YYYY-MM-DD format
+          const dateString = entry.timestamp; // Already formatted as YYYY-MM-DD
 
           if (!hoursPerDay[dateString]) {
             hoursPerDay[dateString] = { clockin: null, clockout: null };
           }
 
           if (entry.type === 'clockin') {
-            hoursPerDay[dateString].clockin = entry.timestamp;
+            hoursPerDay[dateString].clockin = new Date(entry.timestamp);
           } else if (entry.type === 'clockout') {
-            hoursPerDay[dateString].clockout = entry.timestamp;
+            hoursPerDay[dateString].clockout = new Date(entry.timestamp);
           }
         });
 
@@ -90,7 +90,6 @@ const DriverCalendar = ({ route, navigation }) => {
       dots: [{ key: 'workHours', color: '#50cebb' }],
       customText: `${hoursWorked[date]}h`, // For showing hours worked
     };
-    console.log(hoursWorked[date])
     return acc;
   }, {});
 
