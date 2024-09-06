@@ -199,7 +199,7 @@ const HomeScreen = ({ navigation }) => {
           setStatus('clockedOut');
           stopSharingLocation(); // Stop sharing location on clock out
         } catch (error) {
-          Alert.alert('Error', 'Failed to clock out');
+          Alert.alert('Error:', error);
           console.error('Clock out error:', error);
         }
       } else {
