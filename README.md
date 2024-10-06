@@ -1,6 +1,6 @@
 # ShiftTracker
 
-[![App Store](https://img.shields.io/badge/App%20Store-Coming%20Soon-blue)](https://apps.apple.com/ca/app/ls-shifttracker/id6636515709)
+[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/ca/app/ls-shifttracker/id6636515709)
 
 **ShiftTracker** is a comprehensive employee management application designed specifically for LS Carriers, an Edmonton-based trucking company. This mobile app streamlines the process of clocking in and out, tracking work hours, managing driver schedules, and generating detailed reports, ensuring efficient and accurate workforce management.
 
